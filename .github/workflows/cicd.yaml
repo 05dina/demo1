@@ -44,7 +44,6 @@ jobs:
         run: echo "BUILD_VERSION=$(./gradlew getVersion|awk '/DemoVersion/{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Show VERSION
-        id: get_version
         run: echo ${{ steps.get_version.outputs.BUILD_VERSION }}
 
 #      - name: Build and Push Docker image
