@@ -33,9 +33,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Set VERSION
+        id: get_version
+          run: echo "BUILD_VERSION=$(./gradlew getVersion | awk '/DemoVersion/ {print \$2}')" >> $GITHUB_OUTPUT
+
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: docker.io/${{ github.repository }}:latest
+          tags: |
+            docker.io/${{ github.repository }}:latest
+            docker.io/${{ github.repository }}:${{ steps.get_version.outputs.BUILD_VERSION }}
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.BUILD_VERSION }}
