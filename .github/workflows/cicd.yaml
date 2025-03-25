@@ -10,6 +10,7 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: ${{ github.repository }}
+  SONAR_SOURCES: src/main
   SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
   SONAR_PROJECT_KEY: ${{ github.repository }}
   SONAR_PROJECT_NAME: ${{ github.repository }}
@@ -35,10 +36,11 @@ jobs:
       - name: SonarQube Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SOURCES: ${{ env.SONAR_SOURCES }}
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
           SONAR_PROJECT_KEY: ${{ env.SONAR_PROJECT_KEY }}
           SONAR_PROJECT_NAME: ${{ env.SONAR_PROJECT_NAME}}
-        run: ./gradlew sonar --info
+        run: ./gradlew sonar
 
 
   build-and-push:
