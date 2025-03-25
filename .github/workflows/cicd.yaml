@@ -43,7 +43,7 @@ jobs:
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
           SONAR_PROJECT_KEY: ${{ env.SONAR_PROJECT_KEY }}
           SONAR_PROJECT_NAME: ${{ env.SONAR_PROJECT_NAME}}
-        run: ./gradlew sonar --info
+        run: ./gradlew sonar --scan
 
   build-and-push:
     name: Build and Push Docker Image
