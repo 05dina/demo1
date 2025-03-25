@@ -56,5 +56,6 @@ tasks.named('sonar'){
 }
  
 sonar {
-    properties {}
+    properties {
+    }
 }
