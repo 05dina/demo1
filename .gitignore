@@ -1,3 +1,7 @@
 ## Ignore envirenment files
 **.env
 **.envs
+
+## gladle
+.gradle/**
+build/**

@@ -8,8 +8,13 @@ on:
   pull_request:
 
 env:
+  REGION: ${{ vars.REGION }}
+  CLUSTER: ${{ vars.CLUSTER_NAME }}
   REGISTRY: docker.io
   IMAGE_NAME: ${{ github.repository }}
+  USERNAME: ${{ github.repository_owner }}
+  APPLICATION: ${{ github.event.repository.name }}
+  NAMESPACE: ${{ github.event.repository.name }}
   SONAR_SOURCES: src/main
   SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
   SONAR_PROJECT_KEY: ${{ github.repository }}
@@ -33,8 +38,8 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x gradlew
 
-      - name: Build the project
-        run: ./gradlew build --no-daemon
+      - name: Test Build the project
+        run: ./gradlew build
   
       - name: SonarQube Scan
         env:
@@ -43,7 +48,7 @@ jobs:
           SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
           SONAR_PROJECT_KEY: ${{ env.SONAR_PROJECT_KEY }}
           SONAR_PROJECT_NAME: ${{ env.SONAR_PROJECT_NAME}}
-        run: ./gradlew sonar --scan
+        run: ./gradlew sonar
 
   build-and-push:
     name: Build and Push Docker Image
@@ -70,7 +75,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: docker.io
-          username: ${{ github.actor }}
+          username: ${{ env.USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Set VERSION
@@ -83,7 +88,38 @@ jobs:
           context: .
           push: true
           tags: |
-            docker.io/${{ github.repository }}:latest
-            docker.io/${{ github.repository }}:${{ steps.get_version.outputs.BUILD_VERSION }}
+            docker.io/${{ env.IMAGE_NAME }}:latest
+            docker.io/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.BUILD_VERSION }}
           build-args: |
             BUILD_VERSION=${{ steps.get_version.outputs.BUILD_VERSION }}
+
+  deploy:
+    name: Deploy
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          audience: sts.amazonaws.com
+          aws-region: ${{ env.REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Set up Cluster
+        run: |
+          aws eks update-kubeconfig \
+          --region ${{ env.REGION }} \
+          --name ${{ env.CLUSTER }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl -n ${{ env.NAMESPACE }} \
+          set image deployment/${{ env.IMAGE_NAME }} \
+          ${{ env.APPLICATION }}=${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.BUILD_VERSION }}
